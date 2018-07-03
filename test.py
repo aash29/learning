@@ -48,9 +48,24 @@ class eat():
 
         return s1
 
+class wait():
+    name = 'wait'
+    duration = 1;
+    def __str__(self):
+        return 'wait'
+    def pre(state):
+        return (state[10]<timeLimit)&(state[5]>0)&(state[0]>0);
+    def eff(state):
+        s1 = deepcopy(state);
+        s1[10] += wait.duration;
+        s1[5] -= wait.duration;
+        s1[0] -= wait.duration;
+        
+        #print('Waiting');
+        return s1;
 
 
-actions = [eat]
+actions = [eat, wait]
 
 class city(gym.Env):
     def __init__(self):
@@ -75,7 +90,7 @@ class city(gym.Env):
         #10: utime = 0;  # universal time
 
 
-        self.action_space = gym.spaces.Discrete(1);
+        self.action_space = gym.spaces.Discrete(2);
         self.observation_space = gym.spaces.Box(low=np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
                                                 high=np.array([32, 10, 10, 10, 10, 256, 3, 5, 1, 2, 96]));
 
@@ -91,6 +106,7 @@ class city(gym.Env):
                              0,
                              0])
         self.s = deepcopy(self.isd)
+        self.nActions = 0
         self.observation = deepcopy(self.isd)
 
 
@@ -103,11 +119,19 @@ class city(gym.Env):
         r = 0
         if (s1[10] > 60) & (s1[10] < 100) & (s1[5] > 0) & (s1[0] > 0) & (s1[7] > 1):
             r = 100
-        self.s = s1;
-        return s1, r, False, {}
+        self.s = s1
+        self.nActions += 1
+
+        
+        if self.nActions > 100:
+            reset  = True
+        else:
+            reset = False
+        return s1, r, reset, {}
 
     def reset(self):
         self.s = deepcopy(self.isd)
+        self.nActions = 0
         return self.s
 
     def render(self, mode='human', close=False):
