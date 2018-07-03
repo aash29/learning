@@ -44,7 +44,7 @@ class eat():
         s1[10] += eat.duration
         s1[0] = 32
         s1[5] -= eat.duration
-        s1[5] -= 1
+
 
         return s1
 
@@ -54,18 +54,53 @@ class wait():
     def __str__(self):
         return 'wait'
     def pre(state):
-        return (state[10]<timeLimit)&(state[5]>0)&(state[0]>0);
+        return (state[10]<timeLimit)&(state[5]>0)&(state[0]>0)
     def eff(state):
         s1 = deepcopy(state);
-        s1[10] += wait.duration;
-        s1[5] -= wait.duration;
-        s1[0] -= wait.duration;
+        s1[0] -= wait.duration
+        s1[5] -= wait.duration
+        s1[10] += wait.duration
+
         
         #print('Waiting');
-        return s1;
+        return s1
 
+class gotoWork():
+    name = 'go to work'
+    duration = 2*distToWork+1
+    def pre(state):
+        return (state[10]<timeLimit) & (state[5] > 0) & (state[0] > 0) & (state[9] == 0)
+    def eff(state):
+        s1 = deepcopy(state)
 
-actions = [eat, wait]
+        s1[9] = 1
+
+        s1[0] -= 1
+
+        s1[5] -= gotoWork.duration
+
+        s1[10] += gotoWork.duration
+
+        return s1
+
+class work():
+    name = 'work'
+    duration = 20
+    def pre(state):
+        return (state[10] < timeLimit) & (state[5] > 0) & (state[0] > 0) & (state[9] == 1)
+    def eff(state):
+        s1 = deepcopy(state)
+
+        s1[5] -= work.duration
+
+        s1[0] -= 1
+
+        s1[7] += 1
+        s1[10] += work.duration
+
+        return s1
+
+actions = [eat, wait, gotoWork, work]
 
 class city(gym.Env):
     def __init__(self):
@@ -90,7 +125,7 @@ class city(gym.Env):
         #10: utime = 0;  # universal time
 
 
-        self.action_space = gym.spaces.Discrete(2);
+        self.action_space = gym.spaces.Discrete(4);
         self.observation_space = gym.spaces.Box(low=np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
                                                 high=np.array([32, 10, 10, 10, 10, 256, 3, 5, 1, 2, 96]));
 
@@ -124,7 +159,7 @@ class city(gym.Env):
 
         
         if self.nActions > 100:
-            reset  = True
+            reset = True
         else:
             reset = False
         return s1, r, reset, {}
@@ -172,10 +207,11 @@ dqn.compile(Adam(lr=1e-3), metrics=['mae'])
 # Okay, now it's time to learn something! We visualize the training here for show, but this
 # slows down training quite a lot. You can always safely abort the training prematurely using
 # Ctrl + C.
-dqn.fit(env, nb_steps=50000, visualize=True, verbose=2)
+dqn.fit(env, nb_steps=5000, visualize=False, verbose=2)
 
 # After training is done, we save the final weights.
-dqn.save_weights('dqn_{}_weights.h5f'.format(ENV_NAME), overwrite=True)
+dqn.save_weights('dqn_weights.h5f', overwrite=True)
+
 
 # Finally, evaluate our algorithm for 5 episodes.
 dqn.test(env, nb_episodes=5, visualize=True)
