@@ -13,6 +13,8 @@ from rl.memory import SequentialMemory
 
 from copy import deepcopy
 
+from keras import backend as K
+
 ENV_NAME = 'city'
 
 distToWork = 1;
@@ -149,14 +151,20 @@ class city(gym.Env):
     def step(self, a):
         action = actions[a]
         s1 = deepcopy(self.s)
+        r = 0
         if (action.pre(self.s)):
             s1 = action.eff(self.s)
-        r = 0
-        if (s1[10] > 60) & (s1[10] < 100) & (s1[5] > 0) & (s1[0] > 0) & (s1[7] > 1):
-            r = 100
+        else:
+            r -= 100
+
+        if (s1[10] > 80) & (s1[10] < 100) & (s1[5] > 0) & (s1[0] > 0) & (s1[7] > 1):
+            r += 100
+
+
         self.s = s1
         self.nActions += 1
 
+        r += s1[10]
         
         if self.nActions > 100:
             reset = True
@@ -170,7 +178,7 @@ class city(gym.Env):
         return self.s
 
     def render(self, mode='human', close=False):
-        print(self.s);
+        print(self.s)
 
 
 
@@ -214,4 +222,12 @@ dqn.save_weights('dqn_weights.h5f', overwrite=True)
 
 
 # Finally, evaluate our algorithm for 5 episodes.
-dqn.test(env, nb_episodes=5, visualize=True)
+#dqn.test(env, nb_episodes=5, visualize=True)
+
+kvar = K.variable(env.isd.reshape((1,) + env.observation_space.shape))
+y = dqn.model(kvar)
+a0 = np.argmax(y)
+
+
+
+
