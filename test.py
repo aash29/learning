@@ -52,7 +52,7 @@ class eat():
 
 class wait():
     name = 'wait'
-    duration = 1;
+    duration = 10;
     def __str__(self):
         return 'wait'
     def pre(state):
@@ -155,16 +155,16 @@ class city(gym.Env):
         if (action.pre(self.s)):
             s1 = action.eff(self.s)
         else:
-            r -= 100
+            r -= 1000
 
         if (s1[10] > 80) & (s1[10] < 100) & (s1[5] > 0) & (s1[0] > 0) & (s1[7] > 1):
-            r += 100
+            r += 1000
 
 
         self.s = s1
         self.nActions += 1
 
-        r += s1[10]
+        #r += s1[10]
         
         if self.nActions > 100:
             reset = True
@@ -194,14 +194,14 @@ nb_actions = env.action_space.n
 # Next, we build a very simple model.
 model = Sequential()
 model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
-model.add(Dense(11))
+model.add(Dense(32))
 model.add(Activation('relu'))
-model.add(Dense(11))
+model.add(Dense(32))
 model.add(Activation('relu'))
-model.add(Dense(11))
+model.add(Dense(32))
 model.add(Activation('relu'))
 model.add(Dense(nb_actions))
-model.add(Activation('linear'))
+model.add(Activation('softmax'))
 print(model.summary())
 
 # Finally, we configure and compile our agent. You can use every built-in Keras optimizer and
@@ -215,7 +215,7 @@ dqn.compile(Adam(lr=1e-3), metrics=['mae'])
 # Okay, now it's time to learn something! We visualize the training here for show, but this
 # slows down training quite a lot. You can always safely abort the training prematurely using
 # Ctrl + C.
-dqn.fit(env, nb_steps=5000, visualize=False, verbose=2)
+dqn.fit(env, nb_steps=100000, visualize=False, verbose=2)
 
 # After training is done, we save the final weights.
 dqn.save_weights('dqn_weights.h5f', overwrite=True)
@@ -227,6 +227,18 @@ dqn.save_weights('dqn_weights.h5f', overwrite=True)
 kvar = K.variable(env.isd.reshape((1,) + env.observation_space.shape))
 y = dqn.model(kvar)
 a0 = np.argmax(y)
+
+for i in range(1, 10):
+    print(a0)
+    s1 = env.step(a0)
+    kvar = K.variable(s1[0].reshape((1,) + env.observation_space.shape))
+    y = dqn.model(kvar)
+    yv = K.eval(y)
+    print(yv)
+    a0 = np.argmax(yv)
+
+print(s1[0])
+
 
 
 
