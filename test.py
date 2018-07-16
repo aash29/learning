@@ -52,7 +52,7 @@ class eat():
 
 class wait():
     name = 'wait'
-    duration = 10;
+    duration = 10
     def __str__(self):
         return 'wait'
     def pre(state):
@@ -194,6 +194,10 @@ nb_actions = env.action_space.n
 # Next, we build a very simple model.
 model = Sequential()
 model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
+model.add(Dense(32))
+model.add(Activation('relu'))
+model.add(Dense(32))
+model.add(Activation('relu'))
 model.add(Dense(32))
 model.add(Activation('relu'))
 model.add(Dense(32))
