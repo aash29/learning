@@ -41,20 +41,18 @@ class eat():
         s1[0] = 32
         s1[4] -= 1
         s1[5] -= eat.duration
-        
-
 
         return tuple(s1)
 
 class wait():
     name = 'wait'
-    duration = 10
+    duration = 5
     def __str__(self):
         return 'wait'
     def pre(state):
-        return (state[10]<timeLimit)&(state[5]>0)&(state[0]>0)
+        return (state[10] < timeLimit) & (state[5] > 0) & (state[0] > 0)
     def eff(state):
-        s1 = list(deepcopy(state));
+        s1 = list(deepcopy(state))
         s1[0] -= wait.duration
         s1[5] -= wait.duration
         s1[10] += wait.duration
@@ -67,7 +65,7 @@ class gotoWork():
     name = 'go to work'
     duration = 2*distToWork+1
     def pre(state):
-        return (state[10]<timeLimit) & (state[5] > 0) & (state[0] > 0) & (state[9] == 0)
+        return (state[10]<timeLimit) & (state[5] > 0) & (state[0] > 0) & (state[9] != 1)
     def eff(state):
         s1 = list(deepcopy(state))
 
@@ -81,11 +79,47 @@ class gotoWork():
 
         return tuple(s1)
 
+
+class goToShop():
+    name = 'go to shop'
+    duration = 2 * distToShop + 1
+
+    def pre(state):
+        return (state[10] < timeLimit) & (state[5] > 0) & (state[0] > 0) & (state[9] != 2)
+
+    def eff(state):
+        s1 = list(deepcopy(state))
+
+        s1[9] = 2
+
+        s1[0] -= 1
+
+        s1[5] -= goToShop.duration
+
+        s1[10] += goToShop.duration
+
+        return tuple(s1)
+
+
+class buyFood():
+    name = 'buy food'
+    duration = 1
+    def pre(state):
+        return (state[10] < timeLimit) & (state[5] > 0) & (state[0] > 0) & (state[9] == 2) & (state[2] > 0)
+
+    def eff(state):
+        s1 = list(deepcopy(state))
+        s1[2] -= 1
+        s1[4] += 1
+        return tuple(s1)
+
+
+
 class goHome():
     name = 'go to work'
-    duration = 2*distToWork+1
+    duration = 2 * distToShop + 1
     def pre(state):
-        return (state[10]<timeLimit) & (state[5] > 0) & (state[0] > 0) & (state[9] == 1)
+        return (state[10] < timeLimit) & (state[5] > 0) & (state[0] > 0) & (state[9] != 0)
     def eff(state):
         s1 = list(deepcopy(state))
 
@@ -118,7 +152,7 @@ class work():
 
         return tuple(s1)
 
-actions = [eat, wait, gotoWork, work, goHome]
+actions = [eat, wait, gotoWork, work, goHome, goToShop, buyFood]
 
 class city(gym.Env):
     def __init__(self):
@@ -139,7 +173,7 @@ class city(gym.Env):
         #6: absent = 0;
         #7: workDays = 0;
         #8: isHomeHeated = 0;
-        #9: loc  # atHome = 0 , atWork = 1
+        #9: loc  # atHome = 0, atWork = 1, atShop = 2
         #10: utime = 0;  # universal time
 
 
@@ -173,14 +207,19 @@ class city(gym.Env):
         #else:
         #    r -= 100
 
-        if (s1[10] > 80) & (s1[10] < 100) & (s1[5] > 0) & (s1[0] > 0) & (s1[7] > 1) & (s1[9] == 0):
-            r += 100
 
+        if (s1[10] > 60) & (s1[10] < 100) & (s1[5] > 0) & (s1[0] > 0) & (s1[7] > 1):
+            r += 100
+            r += s1[0]*10 #sat
+            r += s1[4]*10  #food
+            if (s1[9] == 0):
+                r += 100
+            r += s1[7]*10 #work done
 
         self.s = s1
         self.nActions += 1
 
-        r += s1[10]
+        #r += s1[10]
         
         if self.nActions > 100:
             reset = True
@@ -206,7 +245,7 @@ def getLegalActions(s):
     return legalActions
     
 from qlearning import QLearningAgent
-agent = QLearningAgent(alpha=0.5, epsilon=0.25, discount=0.99,
+agent = QLearningAgent(alpha=0.5, epsilon=0.5, discount=0.99,
                        get_legal_actions = getLegalActions)
 
 def play_and_train(env,agent,t_max=10**4):
@@ -253,15 +292,15 @@ np.random.seed(123)
 
 
 rewards = []
-for i in range(1000):
+for i in range(10000):
     rewards.append(play_and_train(env, agent))
-    agent.epsilon *= 0.99
+    agent.epsilon *= 0.999
     
-    if i %100 ==0:
+    if i %1000 ==0:
         #clear_output(True)
         print('eps =', agent.epsilon, 'mean reward =', np.mean(rewards[-10:]))
         plt.plot(rewards)
-    plt.show(block=False)
+        plt.show()
 
 
 s0 = env.isd;
