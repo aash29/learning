@@ -159,15 +159,20 @@ class city(gym.Env):
         if (action.pre(self.s)):
             s1 = action.eff(self.s)
         else:
+<<<<<<< HEAD
             r -= 100
+=======
+            r -= 1000
+
+>>>>>>> eafef77d060ee48edc9cd471a268d5a25fc0193f
         if (s1[10] > 80) & (s1[10] < 100) & (s1[5] > 0) & (s1[0] > 0) & (s1[7] > 1):
-            r += 100
+            r += 1000
 
 
         self.s = s1
         self.nActions += 1
 
-        r += s1[10]
+        #r += s1[10]
         
         if self.nActions > 100:
             reset = True
@@ -215,6 +220,7 @@ nb_actions = env.action_space.n
 
 model = Sequential()
 model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
+<<<<<<< HEAD
 #model.add(LSTM(32, return_sequences=True, stateful=True, input_dim=11, batch_input_shape=(32,8,4)))
 model.add(Dense(32, activation = 'relu'))
 model.add(Dense(32, activation = 'relu'))
@@ -225,6 +231,21 @@ model.compile(loss='categorical_crossentropy',
               metrics=['accuracy'])
 
 #print(model.summary())
+=======
+model.add(Dense(32))
+model.add(Activation('relu'))
+model.add(Dense(32))
+model.add(Activation('relu'))
+model.add(Dense(32))
+model.add(Activation('relu'))
+model.add(Dense(32))
+model.add(Activation('relu'))
+model.add(Dense(32))
+model.add(Activation('relu'))
+model.add(Dense(nb_actions))
+model.add(Activation('softmax'))
+print(model.summary())
+>>>>>>> eafef77d060ee48edc9cd471a268d5a25fc0193f
 
 # Finally, we configure and compile our agent. You can use every built-in Keras optimizer and
 # even the metrics!
@@ -238,7 +259,7 @@ dqn.compile(Adam(lr=1e-3), metrics=['mae'])
 # Okay, now it's time to learn something! We visualize the training here for show, but this
 # slows down training quite a lot. You can always safely abort the training prematurely using
 # Ctrl + C.
-dqn.fit(env, nb_steps=5000, visualize=False, verbose=2)
+dqn.fit(env, nb_steps=100000, visualize=False, verbose=2)
 
 # After training is done, we save the final weights.
 dqn.save_weights('dqn_weights.h5f', overwrite=True)
@@ -259,6 +280,18 @@ for i in range(1, 10):
     a0 = np.argmax(y)
     print(a0)
 
+
+
+for i in range(1, 10):
+    print(a0)
+    s1 = env.step(a0)
+    kvar = K.variable(s1[0].reshape((1,) + env.observation_space.shape))
+    y = dqn.model(kvar)
+    yv = K.eval(y)
+    print(yv)
+    a0 = np.argmax(yv)
+
+print(s1[0])
 
 
 
