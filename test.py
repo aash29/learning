@@ -3,8 +3,10 @@
 import numpy as np
 import gym
 
+import keras
+
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten
+from keras.layers import Dense, Activation, Flatten, SimpleRNN, LSTM
 from keras.optimizers import Adam
 
 from rl.agents.dqn import DQNAgent
@@ -14,6 +16,8 @@ from rl.memory import SequentialMemory
 from copy import deepcopy
 
 from keras import backend as K
+
+import tensorflow as tf
 
 ENV_NAME = 'city'
 
@@ -52,7 +56,7 @@ class eat():
 
 class wait():
     name = 'wait'
-    duration = 1;
+    duration = 10
     def __str__(self):
         return 'wait'
     def pre(state):
@@ -156,7 +160,6 @@ class city(gym.Env):
             s1 = action.eff(self.s)
         else:
             r -= 100
-
         if (s1[10] > 80) & (s1[10] < 100) & (s1[5] > 0) & (s1[0] > 0) & (s1[7] > 1):
             r += 100
 
@@ -192,17 +195,36 @@ env.seed(123)
 nb_actions = env.action_space.n
 
 # Next, we build a very simple model.
+#model = Sequential()
+
+#model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
+#model.add(Dense(32))
+#model.add(Activation('relu'))
+
+#model.add(LSTM(11, input_shape=(1, 11),  return_sequences=True))
+#model.add(Activation('relu'))
+#model.add(Dense(11))
+#model.add(Activation('relu')).
+
+#model.add(Dense(32))
+#model.add(Activation('relu'))
+#model.add(Dense(32))
+#model.add(Activation('relu'))
+#model.add(Dense(nb_actions))
+#model.add(Activation('softmax'))
+
 model = Sequential()
 model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
-model.add(Dense(11))
-model.add(Activation('relu'))
-model.add(Dense(11))
-model.add(Activation('relu'))
-model.add(Dense(11))
-model.add(Activation('relu'))
-model.add(Dense(nb_actions))
-model.add(Activation('linear'))
-print(model.summary())
+#model.add(LSTM(32, return_sequences=True, stateful=True, input_dim=11, batch_input_shape=(32,8,4)))
+model.add(Dense(32, activation = 'relu'))
+model.add(Dense(32, activation = 'relu'))
+model.add(Dense(32, activation = 'relu'))
+model.add(Dense(nb_actions, activation='softmax'))
+model.compile(loss='categorical_crossentropy',
+              optimizer='rmsprop',
+              metrics=['accuracy'])
+
+#print(model.summary())
 
 # Finally, we configure and compile our agent. You can use every built-in Keras optimizer and
 # even the metrics!
@@ -210,6 +232,7 @@ memory = SequentialMemory(limit=50000, window_length=1)
 policy = BoltzmannQPolicy()
 dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=10,
                target_model_update=1e-2, policy=policy)
+
 dqn.compile(Adam(lr=1e-3), metrics=['mae'])
 
 # Okay, now it's time to learn something! We visualize the training here for show, but this
@@ -225,8 +248,18 @@ dqn.save_weights('dqn_weights.h5f', overwrite=True)
 #dqn.test(env, nb_episodes=5, visualize=True)
 
 kvar = K.variable(env.isd.reshape((1,) + env.observation_space.shape))
-y = dqn.model(kvar)
+y = K.eval(dqn.model(kvar))
 a0 = np.argmax(y)
+print(a0)
+
+for i in range(1, 10):
+    s1 = env.step(a0)[0]
+    kvar = tf.transpose(K.variable(s1))
+    y = K.eval(dqn.model(kvar))
+    a0 = np.argmax(y)
+    print(a0)
+
+
 
 
 
