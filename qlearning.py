@@ -53,7 +53,7 @@ class QLearningAgent:
         if len(possible_actions) == 0:
             return 0.0
 
-        return max([self.get_qvalue(state,action) for action in possible_actions])
+        return max([self.get_qvalue(state, action) for action in possible_actions])
 
         
     def update(self, state, action, reward, next_state):
