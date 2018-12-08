@@ -11,8 +11,8 @@ from copy import deepcopy
 
 ENV_NAME = 'city'
 
-distToWork = 1;
-distToShop = 1;
+distToWork = 5;
+distToShop = 2;
 workDifficulty = 1;
 workTemperature = 1;
 workStart = 0;
@@ -54,7 +54,7 @@ class wait():
     def eff(state):
         s1 = list(deepcopy(state))
         s1[0] -= wait.duration
-        s1[5] -= wait.duration
+        s1[5] += 20
         s1[10] += wait.duration
 
         
@@ -73,7 +73,7 @@ class gotoWork():
 
         s1[0] -= 1
 
-        s1[5] -= gotoWork.duration
+        s1[5] -= gotoWork.duration*3
 
         s1[10] += gotoWork.duration
 
@@ -94,9 +94,9 @@ class goToShop():
 
         s1[0] -= 1
 
-        s1[5] -= goToShop.duration
+        s1[5] -= goToShop.duration*3
 
-        s1[10] += goToShop.duration
+        s1[10] += goToShop.duration*3
 
         return tuple(s1)
 
@@ -127,9 +127,9 @@ class goHome():
 
         s1[0] -= 1
 
-        s1[5] -= gotoWork.duration
+        s1[5] -= goHome.duration*3
 
-        s1[10] += gotoWork.duration
+        s1[10] += goHome.duration
 
         return tuple(s1)
 
@@ -143,7 +143,7 @@ class work():
     def eff(state):
         s1 = list(deepcopy(state))
 
-        s1[5] -= work.duration
+        s1[5] -= work.duration*3
 
         s1[0] -= 1
 
@@ -208,7 +208,7 @@ class city(gym.Env):
         #    r -= 100
 
 
-        if (s1[10] > 60) & (s1[10] < 100) & (s1[5] > 0) & (s1[0] > 0) & (s1[7] > 1):
+        if (s1[10] > 70) & (s1[10] < 100) & (s1[5] > 0) & (s1[0] > 0) & (s1[7] > 1):
             r += 100
             r += s1[0]*10 #sat
             r += s1[4]*10  #food
@@ -219,8 +219,9 @@ class city(gym.Env):
         self.s = s1
         self.nActions += 1
 
-        #r += s1[10]
-        
+        r += s1[0] * 1  # sat
+        r += s1[7] * 1  # work done
+
         if self.nActions > 100:
             reset = True
         else:
@@ -300,7 +301,7 @@ for i in range(10000):
         #clear_output(True)
         print('eps =', agent.epsilon, 'mean reward =', np.mean(rewards[-10:]))
         plt.plot(rewards)
-        plt.show()
+plt.show()
 
 
 s0 = env.isd;

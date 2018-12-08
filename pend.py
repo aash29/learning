@@ -10,24 +10,24 @@ import numpy as np
 from collections import deque
 import matplotlib.pyplot as plt
 
-train_episodes = 500          # max number of episodes to learn from
+train_episodes = 1000          # max number of episodes to learn from
 max_steps = 1000                # max steps in an episode
 gamma = 0.99                   # future reward discount
 
 # Exploration parameters
-explore_start = 1.0            # exploration probability at start
+explore_start = 1            # exploration probability at start
 explore_stop = 0.01            # minimum exploration probability 
 decay_rate = 0.0001            # exponential decay rate for exploration prob
 
 # Network parameters
-hidden_size = 256               # number of units in each Q-network hidden layer
-learning_rate = 0.0001         # Q-network learning rate
+hidden_size = 64               # number of units in each Q-network hidden layer
+learning_rate = 0.001         # Q-network learning rate
 
 # Memory parameters
 memory_size = 10000            # memory capacity
 batch_size = 20                # experience mini-batch size
 pretrain_length = batch_size   # number experiences to pretrain the memory
-init_state = (1, 0, 0, 0)
+init_state = np.array([0, 0, 0, 0])
 
 def running_mean(x, N):
     cumsum = np.cumsum(np.insert(x, 0, 0))
@@ -65,10 +65,10 @@ class QNetwork:
             # ReLU hidden layers
             self.fc1 = tf.contrib.layers.fully_connected(self.inputs_, hidden_size)
             self.fc2 = tf.contrib.layers.fully_connected(self.fc1, hidden_size)
-            self.fc3 = tf.contrib.layers.fully_connected(self.fc2, hidden_size)
+        
 
             # Linear output layer
-            self.output = tf.contrib.layers.fully_connected(self.fc3, action_size,
+            self.output = tf.contrib.layers.fully_connected(self.fc2, action_size,
                                                             activation_fn=None)
             
             ### Train with loss (targetQ - Q)^2
@@ -188,17 +188,19 @@ class MyCartPoleEnv(gym.Env):
             theta_dot = theta_dot + self.tau * thetaacc
             theta = theta + self.tau * theta_dot
         self.state = (x, x_dot, theta, theta_dot)
+     
+        reward = 0
         done = x < -self.x_threshold \
                or x > self.x_threshold \
                or theta < -self.theta_threshold_radians \
                or theta > self.theta_threshold_radians
         done = bool(done)
 
-        reward = 0
+     
         if not done:
             #reward = max(1/(abs(x-1)), 100) + max(1/(theta), 100)
             #reward = -10*(abs(x-1)) -10*abs(theta)
-            reward = (env.theta_threshold_radians - abs(theta))**2 +(env.x_threshold-x)**2
+            reward += abs(env.theta_threshold_radians - abs(theta))/env.theta_threshold_radians +abs(env.x_threshold-x)/env.x_threshold
             #if (action==0):
             #    reward = 1
 
@@ -220,7 +222,7 @@ class MyCartPoleEnv(gym.Env):
         return np.array(self.state), reward, done, {}
 
     def reset(self):
-        self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(4,))
+        self.state = self.np_random.uniform(low=[-2,-0.5,-0.1, -0.1], high=[2,0.5,0.1, 0.1], size=(4,))
         self.steps_beyond_done = None
         return np.array(self.state)
 
@@ -306,6 +308,9 @@ for ii in range(pretrain_length):
     if done:
         # The simulation fails so no next state
         next_state = init_state #np.zeros(state.shape)
+
+        print(init_state)
+
         # Add experience to memory
         memory.add((state, action, reward, next_state))
         
@@ -331,7 +336,7 @@ with tf.Session() as sess:
         total_reward = 0
         t = 0
 
-        if (ep%100) == 0:
+        if (ep%450) == 0:
 
             eps, rews = np.array(rewards_list).T
             smoothed_rews = running_mean(rews, 10)
@@ -425,7 +430,7 @@ with tf.Session() as sess:
         # Explore or Exploit
         explore_p = explore_stop + (explore_start - explore_stop) * np.exp(-decay_rate * step)
         if explore_p > np.random.rand():
-            # Make a random action
+             # Make a random action
             action = env.action_space.sample()
         else:
             # Get action from Q-network
