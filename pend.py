@@ -5,13 +5,13 @@ import math
 
 from gym import spaces, logger
 from gym.utils import seeding
-import numpy as np
+
 
 from collections import deque
 import matplotlib.pyplot as plt
 
-train_episodes = 1000          # max number of episodes to learn from
-max_steps = 1000                # max steps in an episode
+train_episodes = 1500          # max number of episodes to learn from
+max_steps = 200                # max steps in an episode
 gamma = 0.99                   # future reward discount
 
 # Exploration parameters
@@ -20,8 +20,8 @@ explore_stop = 0.01            # minimum exploration probability
 decay_rate = 0.0001            # exponential decay rate for exploration prob
 
 # Network parameters
-hidden_size = 64               # number of units in each Q-network hidden layer
-learning_rate = 0.001         # Q-network learning rate
+hidden_size = 128               # number of units in each Q-network hidden layer
+learning_rate = 0.0001         # Q-network learning rate
 
 # Memory parameters
 memory_size = 10000            # memory capacity
@@ -65,10 +65,11 @@ class QNetwork:
             # ReLU hidden layers
             self.fc1 = tf.contrib.layers.fully_connected(self.inputs_, hidden_size)
             self.fc2 = tf.contrib.layers.fully_connected(self.fc1, hidden_size)
+            self.fc3 = tf.contrib.layers.fully_connected(self.fc2, hidden_size)
         
 
             # Linear output layer
-            self.output = tf.contrib.layers.fully_connected(self.fc2, action_size,
+            self.output = tf.contrib.layers.fully_connected(self.fc3, action_size,
                                                             activation_fn=None)
             
             ### Train with loss (targetQ - Q)^2
@@ -200,9 +201,9 @@ class MyCartPoleEnv(gym.Env):
         if not done:
             #reward = max(1/(abs(x-1)), 100) + max(1/(theta), 100)
             #reward = -10*(abs(x-1)) -10*abs(theta)
-            reward += abs(env.theta_threshold_radians - abs(theta))/env.theta_threshold_radians +abs(env.x_threshold-x)/env.x_threshold
-            #if (action==0):
-            #    reward = 1
+            #reward += abs(env.theta_threshold_radians - abs(theta))/env.theta_threshold_radians + abs(env.x_threshold-x)/env.x_threshold
+            if (action==2):
+                reward = 1
 
             #r1 = (env.x_threshold - abs(x))/env.x_threshold - 0.8
             #r2 = (env.theta_threshold_radians - abs(theta))/env.theta_threshold_radians - 0.5
@@ -299,7 +300,7 @@ memory = Memory(max_size=memory_size)
 # Make a bunch of random actions and store the experiences
 for ii in range(pretrain_length):
     # Uncomment the line below to watch the simulation
-    # env.render()
+    #env.render()
 
     # Make a random action
     action = env.action_space.sample()
@@ -336,7 +337,7 @@ with tf.Session() as sess:
         total_reward = 0
         t = 0
 
-        if (ep%450) == 0:
+        if (ep%500) == 0:
 
             eps, rews = np.array(rewards_list).T
             smoothed_rews = running_mean(rews, 10)
@@ -351,7 +352,7 @@ with tf.Session() as sess:
         while t < max_steps:
             step += 1
             # Uncomment this next line to watch the training
-            #env.render()
+            env.render()
             
             # Explore or Exploit
             explore_p = explore_stop + (explore_start - explore_stop)*np.exp(-decay_rate*step) 
