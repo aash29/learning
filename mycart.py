@@ -130,8 +130,8 @@ class MyCartPoleEnv(gym.Env):
             #if (action==2):
             #    reward = 1
 
-            #r1 = (env.x_threshold - abs(x))/env.x_threshold - 0.8
-            #r2 = (env.theta_threshold_radians - abs(theta))/env.theta_threshold_radians - 0.5
+            #r1 = (self.x_threshold - abs(x))/self.x_threshold - 0.8
+            #r2 = (self.theta_threshold_radians - abs(theta))/self.theta_threshold_radians - 0.5
             #reward = r1 + r2
 
         elif self.steps_beyond_done is None:

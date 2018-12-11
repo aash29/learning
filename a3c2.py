@@ -96,7 +96,7 @@ class RandomAgent:
       max_eps: Maximum number of episodes to run agent for.
   """
   def __init__(self, env_name, max_eps):
-    self.env = gym.make(env_name)
+    self.env = MyCartPoleEnv();
     self.max_episodes = max_eps
     self.global_moving_average_reward = 0
     self.res_queue = Queue()
@@ -134,7 +134,7 @@ class MasterAgent():
     if not os.path.exists(save_dir):
       os.makedirs(save_dir)
 
-    env = gym.make(self.game_name)
+    env = MyCartPoleEnv();
     self.state_size = env.observation_space.shape[0]
     self.action_size = env.action_space.n
     self.opt = tf.train.AdamOptimizer(args.lr, use_locking=True)
@@ -249,7 +249,7 @@ class Worker(threading.Thread):
     self.local_model = ActorCriticModel(self.state_size, self.action_size)
     self.worker_idx = idx
     self.game_name = game_name
-    self.env = gym.make(self.game_name).unwrapped
+    self.env = MyCartPoleEnv();
     self.save_dir = save_dir
     self.ep_loss = 0.0
 
@@ -274,7 +274,7 @@ class Worker(threading.Thread):
         action = np.random.choice(self.action_size, p=probs.numpy()[0])
         new_state, reward, done, _ = self.env.step(action)
         if done:
-          reward = -1
+          reward = -10
         ep_reward += reward
         mem.store(current_state, action, reward)
 
