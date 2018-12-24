@@ -159,12 +159,7 @@ class city(gym.Env):
         if (action.pre(self.s)):
             s1 = action.eff(self.s)
         else:
-<<<<<<< HEAD
             r -= 100
-=======
-            r -= 1000
-
->>>>>>> eafef77d060ee48edc9cd471a268d5a25fc0193f
         if (s1[10] > 80) & (s1[10] < 100) & (s1[5] > 0) & (s1[0] > 0) & (s1[7] > 1):
             r += 1000
 
@@ -220,7 +215,6 @@ nb_actions = env.action_space.n
 
 model = Sequential()
 model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
-<<<<<<< HEAD
 #model.add(LSTM(32, return_sequences=True, stateful=True, input_dim=11, batch_input_shape=(32,8,4)))
 model.add(Dense(32, activation = 'relu'))
 model.add(Dense(32, activation = 'relu'))
@@ -231,21 +225,6 @@ model.compile(loss='categorical_crossentropy',
               metrics=['accuracy'])
 
 #print(model.summary())
-=======
-model.add(Dense(32))
-model.add(Activation('relu'))
-model.add(Dense(32))
-model.add(Activation('relu'))
-model.add(Dense(32))
-model.add(Activation('relu'))
-model.add(Dense(32))
-model.add(Activation('relu'))
-model.add(Dense(32))
-model.add(Activation('relu'))
-model.add(Dense(nb_actions))
-model.add(Activation('softmax'))
-print(model.summary())
->>>>>>> eafef77d060ee48edc9cd471a268d5a25fc0193f
 
 # Finally, we configure and compile our agent. You can use every built-in Keras optimizer and
 # even the metrics!

@@ -56,8 +56,9 @@ class MyCartPoleEnv(gym.Env):
         self.kinematics_integrator = 'euler'
 
         # Angle at which to fail the episode
-        self.theta_threshold_radians = 24 * 2 * math.pi / 360
+        self.theta_threshold_radians =  60 * math.pi / 360
         self.x_threshold = 2.4
+        self.t = 0
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation is still within bounds
         high = np.array([
@@ -83,7 +84,9 @@ class MyCartPoleEnv(gym.Env):
         #print(action)
         assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
         state = self.state
-        x, x_dot, theta, theta_dot = state
+        x, x_dot, theta, theta_dot= state
+
+        self.t =  self.t+1
         #print(action)
         force = 0 
         if action == 0:
@@ -119,14 +122,21 @@ class MyCartPoleEnv(gym.Env):
         done = x < -self.x_threshold \
                or x > self.x_threshold \
                or theta < -self.theta_threshold_radians \
-               or theta > self.theta_threshold_radians
+               or theta > self.theta_threshold_radians \
+               or self.t > 5000
         done = bool(done)
 
      
         if not done:
             #reward = max(1/(abs(x-1)), 100) + max(1/(theta), 100)
-            #reward = -10*(abs(x-1)) -10*abs(theta)
-            reward = abs(self.theta_threshold_radians - abs(theta))/self.theta_threshold_radians + abs(self.x_threshold-abs(x))/self.x_threshold
+            
+            #reward = -10*(abs(x)) -10*abs(theta)
+            r1 = abs(self.theta_threshold_radians - abs(theta))/self.theta_threshold_radians
+            r2 = abs(self.x_threshold-abs(x))/self.x_threshold
+            reward =  r1 + r2**2
+            #if (self.t%50 == 0):
+            #    print (r1, r2)
+
             #if (action==2):
             #    reward = 1
 
@@ -150,6 +160,7 @@ class MyCartPoleEnv(gym.Env):
     def reset(self):
         self.state = self.np_random.uniform(low=[-2,-0.5,-0.1, -0.1], high=[2,0.5,0.1, 0.1], size=(4,))
         self.steps_beyond_done = None
+        self.t = 0
         return np.array(self.state)
 
     def render(self, mode='human'):

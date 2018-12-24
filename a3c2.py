@@ -273,8 +273,8 @@ class Worker(threading.Thread):
 
         action = np.random.choice(self.action_size, p=probs.numpy()[0])
         new_state, reward, done, _ = self.env.step(action)
-        if done:
-          reward = -10
+        #if done:
+        #  reward = -10
         ep_reward += reward
         mem.store(current_state, action, reward)
 
