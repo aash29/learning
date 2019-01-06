@@ -129,11 +129,24 @@ class MyCartPoleEnv(gym.Env):
      
         if not done:
             #reward = max(1/(abs(x-1)), 100) + max(1/(theta), 100)
-            
             #reward = -10*(abs(x)) -10*abs(theta)
+
             r1 = abs(self.theta_threshold_radians - abs(theta))/self.theta_threshold_radians
-            r2 = abs(self.x_threshold-abs(x))/self.x_threshold
-            reward =  r1 + r2**2
+            r2 = abs(self.x_threshold- abs(x))/self.x_threshold
+            reward =  r1 + r2**2 
+
+            xref = 0.0
+            yref = 1.0
+            
+
+            xp = x + math.sin(theta)
+            yp = math.cos(theta)
+
+            error = math.sqrt((xp - xref)**2 + (yp - yref)**2)
+
+            reward = (1 - error)/abs(1 - error)*(1 - error)**2
+            #print(reward)
+
             #if (self.t%50 == 0):
             #    print (r1, r2)
 
