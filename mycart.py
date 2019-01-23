@@ -119,11 +119,15 @@ class MyCartPoleEnv(gym.Env):
         self.state = (x, x_dot, theta, theta_dot)
      
         reward = 0
-        done = x < -self.x_threshold \
-               or x > self.x_threshold \
-               or theta < -self.theta_threshold_radians \
-               or theta > self.theta_threshold_radians \
+        done = x < - 10* self.x_threshold \
+               or x > 10* self.x_threshold \
+               or theta < -10* self.theta_threshold_radians \
+               or theta > 10* self.theta_threshold_radians \
                or self.t > 5000
+
+        
+
+
         done = bool(done)
 
      
@@ -135,7 +139,7 @@ class MyCartPoleEnv(gym.Env):
             r2 = abs(self.x_threshold- abs(x))/self.x_threshold
             reward =  r1 + r2**2 
 
-            xref = 0.0
+            xref = -1.0
             yref = 1.0
             
 
