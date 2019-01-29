@@ -123,7 +123,7 @@ class mycube(gym.Env, EzPickle):
         self.reset()
 
         high = np.array([np.inf] * 6)
-        self.action_space = spaces.Box(np.array([-1]), np.array([1]), dtype=np.float32)
+        self.action_space = spaces.Box(np.array([-100]), np.array([100]), dtype=np.float32)
         self.observation_space = spaces.Box(-high, high, dtype=np.float32)
 
     def seed(self, seed=None):
@@ -313,7 +313,6 @@ class mycube(gym.Env, EzPickle):
         return self.step(0)[0]
 
     def step(self, action):
-        print("step")
         #self.hull.ApplyForceToCenter((0, 20), True) -- Uncomment this to receive a bit of stability help
         control_speed = False  # Should be easier as well
 
@@ -344,7 +343,7 @@ class mycube(gym.Env, EzPickle):
             reward = shaping - self.prev_shaping
         self.prev_shaping = shaping
         print(action)
-        self.hull.ApplyTorque(action,True)
+        self.hull.ApplyTorque(0.1,True)
 
         #for a in action:
         #    reward -= 0.00035 * MOTORS_TORQUE * np.clip(np.abs(a), 0, 1)
