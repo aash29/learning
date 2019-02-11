@@ -54,6 +54,7 @@ class MyCartPoleEnv(gym.Env):
         self.force_mag = 10.0
         self.tau = 0.01  # seconds between state updates
         self.kinematics_integrator = 'euler'
+        self.xref = 0
 
         # Angle at which to fail the episode
         self.theta_threshold_radians =  60 * math.pi / 360
@@ -119,10 +120,10 @@ class MyCartPoleEnv(gym.Env):
         self.state = (x, x_dot, theta, theta_dot)
      
         reward = 0
-        done = x < - 10* self.x_threshold \
-               or x > 10* self.x_threshold \
-               or theta < -10* self.theta_threshold_radians \
-               or theta > 10* self.theta_threshold_radians \
+        done = x < -self.x_threshold \
+               or x >  self.x_threshold \
+               or theta < -self.theta_threshold_radians \
+               or theta > self.theta_threshold_radians \
                or self.t > 5000
 
         
@@ -139,19 +140,21 @@ class MyCartPoleEnv(gym.Env):
             #r2 = abs(self.x_threshold- abs(x))/self.x_threshold
             #reward =  r1 + r2**2 
 
-            xref = -1.0
+            #xref = -1.0
             yref = 1.0
             
 
             xp = x + math.sin(theta)
             yp = math.cos(theta)
 
-            error = math.sqrt((xp - xref)**2 + (yp - yref)**2)
+            errorSq = (xp - self.xref)**2 + (yp - yref)**2
 
             #reward = (1 - error)/abs(1 - error)*(1 - error)**2
             #reward = (2 - error)
 
-            reward = math.exp(-2*error**2)
+            reward = math.exp(-2*errorSq)
+
+            #reward = -error
 
             #print(x)
 
@@ -182,6 +185,8 @@ class MyCartPoleEnv(gym.Env):
         self.state = self.np_random.uniform(low=[-2,-0.5,-0.1, -0.1], high=[2,0.5,0.1, 0.1], size=(4,))
         self.steps_beyond_done = None
         self.t = 0
+        self.xref = self.np_random.uniform(low = -2, high = 2)
+        #self.xref = 2.3
         return np.array(self.state)
 
     def render(self, mode='human'):
@@ -221,6 +226,13 @@ class MyCartPoleEnv(gym.Env):
             self.track.set_color(0, 0, 0)
             self.viewer.add_geom(self.track)
 
+            self.ref = rendering.Line((0, 0), (0, 30))
+            self.refTrans = rendering.Transform()
+            self.ref.add_attr(self.refTrans)
+            self.ref.set_color(0, 0, 0)
+            self.viewer.add_geom(self.ref)
+
+
             self._pole_geom = pole
 
         if self.state is None: return None
@@ -234,6 +246,7 @@ class MyCartPoleEnv(gym.Env):
         cartx = x[0] * scale + screen_width / 2.0  # MIDDLE OF CART
         self.carttrans.set_translation(cartx, carty)
         self.poletrans.set_rotation(-x[2])
+        self.refTrans.set_translation(self.xref * scale + screen_width / 2.0,0)
 
         return self.viewer.render(return_rgb_array=mode == 'rgb_array')
 
