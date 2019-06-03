@@ -6,7 +6,7 @@ from gym import spaces, logger
 from gym.utils import seeding
 
 
-class MyCartPoleEnv(gym.Env):
+class MyCartContEnv(gym.Env):
     """
     Description:
         A pole is attached by an un-actuated joint to a cart, which moves along a frictionless track. The pendulum starts upright, and the goal is to prevent it from falling over by increasing and reducing the cart's velocity.
@@ -62,13 +62,14 @@ class MyCartPoleEnv(gym.Env):
         self.t = 0
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation is still within bounds
-        high = np.array([
+        high = np.ndarray.flatten(np.array([
             self.x_threshold * 2,
             np.finfo(np.float32).max,
             self.theta_threshold_radians * 2,
-            np.finfo(np.float32).max])
+            np.finfo(np.float32).max]))
+        highF = 100
 
-        self.action_space = spaces.Discrete(5)
+        self.action_space =  spaces.Box(-highF, highF, dtype=np.float32, shape=(1,))
         self.observation_space = spaces.Box(-high, high, dtype=np.float32)
 
         self.seed()
@@ -89,17 +90,7 @@ class MyCartPoleEnv(gym.Env):
 
         self.t =  self.t+1
         #print(action)
-        force = 0 
-        if action == 0:
-            force = -self.force_mag
-        if action == 1:
-            force = -self.force_mag/2
-        if action == 2:
-            force = 0
-        if action == 3:
-            force = self.force_mag/2
-        if action == 4:
-            force = self.force_mag
+        force = action
 
         costheta = math.cos(theta)
         sintheta = math.sin(theta)
@@ -154,7 +145,8 @@ class MyCartPoleEnv(gym.Env):
 
             #reward = math.exp(-10*errorSq) - 0.1
 
-            reward = math.exp(-0.5*errorSq) - 0.2
+            reward = math.exp(-2*errorSq) - 0.1  - abs(theta_dot)
+
             #reward = -error
 
             #print(x)
@@ -179,8 +171,10 @@ class MyCartPoleEnv(gym.Env):
                     "You are calling 'step()' even though this environment has already returned done = True. You should always call 'reset()' once you receive 'done = True' -- any further steps are undefined behavior.")
             self.steps_beyond_done += 1
             reward = 0.0
+        stateArray = np.array(self.state,dtype=np.float32)
+        stateArray.shape = (4,)
 
-        return np.array(self.state), reward, done, {}
+        return stateArray, reward, done, {}
 
     def reset(self):
         self.state = self.np_random.uniform(low=[-2,-0.5,-0.1, -0.1], high=[2,0.5,0.1, 0.1], size=(4,))
@@ -255,3 +249,5 @@ class MyCartPoleEnv(gym.Env):
         if self.viewer:
             self.viewer.close()
             self.viewer = None
+
+
