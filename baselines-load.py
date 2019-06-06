@@ -11,6 +11,8 @@ from stable_baselines.results_plotter import load_results, ts2xy
 from stable_baselines import DDPG
 from stable_baselines.ddpg.noise import AdaptiveParamNoiseSpec
 
+from mycart import MyCartPoleEnv
+from mycartCont import MyCartContEnv
 
 best_mean_reward, n_steps = -np.inf, 0
 log_dir = "./baseline-logs/"
@@ -74,11 +76,11 @@ def callback(_locals, _globals):
   n_steps += 1
   return True
 
-env = gym.make('LunarLanderContinuous-v2')
+env = MyCartContEnv()
 
 # Create and wrap the environment
 model = DDPG(MlpPolicy, env)
-model.load('/tmp/gym/best_model.pkl')
+model.load('./baseline-logs/best_model.pkl')
 
 obs = env.reset()
 for i in range(1000):
