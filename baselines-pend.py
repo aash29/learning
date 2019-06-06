@@ -7,13 +7,17 @@ import matplotlib.pyplot as plt
 import stable_baselines
 from stable_baselines.common.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
-from stable_baselines import PPO2,A2C, DDPG
+from stable_baselines import PPO1,A2C, DDPG, SAC
 
 from stable_baselines.results_plotter import load_results, ts2xy
 from stable_baselines.bench import Monitor
 
 
 from stable_baselines.ddpg import AdaptiveParamNoiseSpec
+
+
+from stable_baselines.gail import ExpertDataset
+
 
 
 best_mean_reward, n_steps = -np.inf, 0
@@ -54,6 +58,9 @@ def plot_results(log_folder, title='Learning Curve'):
     :param title: (str) the title of the task to plot
     """
     x, y = ts2xy(load_results(log_folder), 'timesteps')
+
+        
+    
     y = moving_average(y, window=50)
     # Truncate x
     x = x[len(x) - len(y):]
@@ -77,8 +84,12 @@ def callback(_locals, _globals):
     if (n_steps + 1) % 1000 == 0:
         # Evaluate policy training performance
         x, y = ts2xy(load_results(log_dir), 'timesteps')
+        #yn = np.array([],dtype=np.float32)
+        #for y1 in y:
+        #    yn = np.append(yn,float(y1[1:-1]))
+        #y = yn
         if len(x) > 0:
-            mean_reward = np.mean(y[-100:])
+            mean_reward = np.mean(np.asfarray(y[-100:]))
             print(x[-1], 'timesteps')
             print("Best mean reward: {:.2f} - Last mean reward per episode: {:.2f}".format(best_mean_reward, mean_reward))
 
@@ -94,10 +105,25 @@ def callback(_locals, _globals):
 
 param_noise = AdaptiveParamNoiseSpec(initial_stddev=0.1, desired_action_stddev=0.1)
 
-model = DDPG(stable_baselines.ddpg.LnMlpPolicy, env, param_noise=param_noise, verbose=0)
-model.learn(total_timesteps=100000,callback=callback)
+
+# Using only one expert trajectory
+# you can specify `traj_limitation=-1` for using the whole dataset
+dataset = ExpertDataset(expert_path='dummy_expert_cartpole.npz',
+                        traj_limitation=1, batch_size=128)
+
+
+#model = DDPG(stable_baselines.ddpg.MlpPolicy, env, param_noise=param_noise, verbose=1)
+#model = PPO1(MlpPolicy, env, verbose=1)
+model = SAC(stable_baselines.sac.MlpPolicy, env, verbose=1)
+
+
+# Pretrain the  model
+model.pretrain(dataset, n_epochs=10000)
+
+
+model.learn(total_timesteps=10000000,callback=callback,log_interval=10)
 obs = env.reset()
 for i in range(1000):
-    action, _states = model.predict(obs)
+    action, _states = model.predict(obs,deterministic=True)
     obs, rewards, dones, info = env.step(action)
     env.render()

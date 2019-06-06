@@ -55,10 +55,10 @@ def callback(_locals, _globals):
   """
   global n_steps, best_mean_reward
   # Print stats every 1000 calls
-  if (n_steps + 1) % 2000 == 0:
+  if (n_steps + 1) % 1000 == 0:
       # Evaluate policy performance
       x, y = ts2xy(load_results(log_dir), 'timesteps')
-      plot_results(log_dir)
+      #plot_results(log_dir)
       if len(x) > 0:
           mean_reward = np.mean(y[-100:])
           print(x[-1], 'timesteps')
