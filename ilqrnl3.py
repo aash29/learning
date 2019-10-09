@@ -16,8 +16,6 @@ force_mag = 10.0
 
 force = 0
 
-x = torch.tensor([[0.0], [0.0], [0.0], [0.0]], dtype=torch.float,requires_grad=True)
-
 
 
 def f(x):
@@ -53,75 +51,90 @@ def rhs(x,u):
 def df(x):
 	f1 = f(x)
 	j1 = [torch.autograd.grad(f1[i],x,retain_graph=True)[0] for i in range(0,4)]
+	#print(j1)
 	return torch.transpose(torch.cat(j1,1),0,1)
 
 
 
-def iLQR(xinit, uinit, f, g, thor):
 
 
-#print(j1)
+def iLQR(xinit, uinit, f, g, nhor):
+	
 
-x0 = torch.tensor([[0.0], [0.0], [0.0], [0.0]], dtype=torch.float,requires_grad=True)
-f0 = f(x0)
-g0 = g(x0)
+	x0 = torch.t(torch.tensor([xinit], dtype=torch.float,requires_grad=True))
+	x00 = torch.cat([x0,torch.tensor([[0.0]])],0)
+	print(x0)
+	u0 = uinit
+	f0 = f(x0)
+	g0 = g(x0)
 
-A = df(x0)
-A = torch.cat([A,f0],1)
-A = A*dt
+	A = df(x0)
+	A = torch.cat([A,f0],1)
+	A = A*dt
 
-I1 = torch.tensor([
-	[1.0, 0.0, 0.0, 0.0, 0.0],
-	[0.0, 1.0, 0.0, 0.0, 0.0],
-	[0.0, 0.0, 1.0, 0.0, 0.0],
-	[0.0, 0.0, 0.0, 1.0, 0.0]])
-A = A + I1
+	I1 = torch.tensor([
+		[1.0, 0.0, 0.0, 0.0, 0.0],
+		[0.0, 1.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 1.0, 0.0]])
+	A = A + I1
 
-A = torch.cat([A, torch.tensor([[0.0, 0.0, 0.0, 0.0, 1.0]])], 0)
-B = g0*dt
-B = torch.cat([B, torch.tensor([[0.0]])], 0)
-
-
-
-Q = 2*torch.eye(5)
-
-# #R = torch.tensor([1], dtype=torch.float,requires_grad=True)
-R = 0.4
-
-N = 1000
-
-P=[Q]
-K=[torch.tensor([1, 0], dtype=torch.float,requires_grad=True)]
+	A = torch.cat([A, torch.tensor([[0.0, 0.0, 0.0, 0.0, 1.0]])], 0)
+	B = g0*dt
+	B = torch.cat([B, torch.tensor([[0.0]])], 0)
 
 
-for n in range(1,N):
-	K.append(-(R+torch.t(B).matmul(P[n-1]).matmul(B)).inverse().matmul((torch.t(B)).matmul(P[n-1]).matmul(A)))
-	P.append(Q + R*torch.t(K[n]).matmul(K[n])+ torch.t(A+B.matmul(K[n])).matmul(P[n-1]).matmul(A+B.matmul(K[n])))
 
-# 	#print(n,K[n])
+	Q = 2*torch.eye(5)
 
+	# #R = torch.tensor([1], dtype=torch.float,requires_grad=True)
+	R = 0.4
 
-x = [torch.tensor([[5], [-0.1], [0.5], [-0.1], [1.0]], dtype=torch.float,requires_grad=True)]
-t = [0.0]
-u = [None]*N
-for i in range(1,N):
+	N = nhor
 
-	u[i-1] = K[N-i].matmul(x[i-1])
-	#x.append(A.matmul(x[i-1])+B*u[i-1])
-	rhs1 = torch.cat([f(x[i-1])+g(x[i-1])*u[i-1],torch.tensor([[0.0]])],0)
+	P=[Q]
+	K=[torch.tensor([1, 0], dtype=torch.float,requires_grad=True)]
 
 
-	x.append(x[i-1] + rhs1*dt + torch.tensor([[0.0], [0.0], [0.0], [0.0], [1.0]]))
-	t.append(i*dt)
+	for n in range(1,N):
+		K.append(-(R+torch.t(B).matmul(P[n-1]).matmul(B)).inverse().matmul((torch.t(B)).matmul(P[n-1]).matmul(A)))
+		P.append(Q + R*torch.t(K[n]).matmul(K[n])+ torch.t(A+B.matmul(K[n])).matmul(P[n-1]).matmul(A+B.matmul(K[n])))
 
-x1 = torch.cat(x,1) 	
+	# 	#print(n,K[n])
 
-x1 = x1.detach()
+
+	e = [torch.tensor([[-0.4], [-0.1], [0.1], [-0.1], [0.0]], dtype=torch.float,requires_grad=True)]
+	t = [0.0]
+	v = [None]*N
+	xp =[x00]
+	for i in range(1,N):
+
+		v[i-1] = K[N-i].matmul(e[i-1])
+		#x.append(A.matmul(x[i-1])+B*u[i-1])
+		x1 = torch.cat([x0,torch.tensor([[1.0]])],0) + e[i-1]
+		u1 = u0 + v[i-1]
+		rhs1 = torch.cat([f(x1)+g(x1)*u1,torch.tensor([[0.0]])],0)
+
+
+		e.append(x1 + rhs1*dt - x00)
+		xp.append(e[i]+x00)
+		t.append(i*dt)
+
+	e1 = torch.cat(e,1) 	
+	e1 = e1.detach()
+
+	xp = torch.cat(xp,1) 	
+	xp = xp.detach()
+
+	return t, xp
+
+[t,x1] = iLQR([1,0,0,0], 0, f, g, 1000)
 
 #plt.plot(x1[0,:].numpy(), x1[2,:].numpy())
 plt.plot(t, x1[0,:].numpy())
 plt.plot(t, x1[1,:].numpy())
 plt.plot(t, x1[2,:].numpy())
 plt.plot(t, x1[3,:].numpy())
+
 
 plt.show()
