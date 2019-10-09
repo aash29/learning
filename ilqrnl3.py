@@ -58,13 +58,13 @@ def df(x):
 
 
 
-def iLQR(xinit, uinit, f, g, nhor):
+def iLQR(xbar, ubar, e0, f, g, nhor, t0):
 	
 
-	x0 = torch.t(torch.tensor([xinit], dtype=torch.float,requires_grad=True))
+	x0 = torch.t(torch.tensor([xbar], dtype=torch.float,requires_grad=True))
 	x00 = torch.cat([x0,torch.tensor([[0.0]])],0)
 	print(x0)
-	u0 = uinit
+	u0 = ubar
 	f0 = f(x0)
 	g0 = g(x0)
 
@@ -103,10 +103,10 @@ def iLQR(xinit, uinit, f, g, nhor):
 	# 	#print(n,K[n])
 
 
-	e = [torch.tensor([[-0.4], [-0.1], [0.1], [-0.1], [0.0]], dtype=torch.float,requires_grad=True)]
-	t = [0.0]
+	e = [torch.tensor(e0, dtype=torch.float,requires_grad=True)]
+	t = [t0]
 	v = [None]*N
-	xp =[x00]
+	xp =[x00 + e[0]]
 	for i in range(1,N):
 
 		v[i-1] = K[N-i].matmul(e[i-1])
@@ -118,7 +118,7 @@ def iLQR(xinit, uinit, f, g, nhor):
 
 		e.append(x1 + rhs1*dt - x00)
 		xp.append(e[i]+x00)
-		t.append(i*dt)
+		t.append(t[i-1]+dt)
 
 	e1 = torch.cat(e,1) 	
 	e1 = e1.detach()
@@ -128,7 +128,10 @@ def iLQR(xinit, uinit, f, g, nhor):
 
 	return t, xp
 
-[t,x1] = iLQR([1,0,0,0], 0, f, g, 1000)
+x0 = [1,0.1,0.2,0]
+e0 = [[-0.2], [-0.1], [0.1], [-0.1], [0.0]]
+
+[t,x1] = iLQR(x0, 0, e0, f, g, 50 , 0)
 
 #plt.plot(x1[0,:].numpy(), x1[2,:].numpy())
 plt.plot(t, x1[0,:].numpy())
@@ -136,5 +139,25 @@ plt.plot(t, x1[1,:].numpy())
 plt.plot(t, x1[2,:].numpy())
 plt.plot(t, x1[3,:].numpy())
 
+x0 = [1.1,0.05,0.1,0]
+e0 = [[x1[0,-1]- x0[0]], [x1[1,-1]-x0[1]], [x1[2,-1]-x0[2]], [x1[3,-1]-x0[3]], [0.0] ]
+
+
+[t,x1] = iLQR(x0, 0, e0, f, g, 50, t[-1])
+
+plt.plot(t, x1[0,:].numpy())
+plt.plot(t, x1[1,:].numpy())
+plt.plot(t, x1[2,:].numpy())
+plt.plot(t, x1[3,:].numpy())
+
+x0 = [1.3,0.0,0.0,0]
+e0 = [[x1[0,-1]- x0[0]], [x1[1,-1]-x0[1]], [x1[2,-1]-x0[2]], [x1[3,-1]-x0[3]], [0.0] ]
+
+[t,x1] = iLQR(x0, 0, e0, f, g, 500, t[-1])
+
+plt.plot(t, x1[0,:].numpy())
+plt.plot(t, x1[1,:].numpy())
+plt.plot(t, x1[2,:].numpy())
+plt.plot(t, x1[3,:].numpy())
 
 plt.show()
