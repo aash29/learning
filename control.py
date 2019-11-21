@@ -8,13 +8,16 @@ import numpy as np
 import torch
 from torch.nn import MSELoss
 
+import sys
+sys.path.insert(0, '/home/aash29/cpp/lcp-physics')
+
 from lcp_physics.physics.world import World, run_world
 from lcp_physics.physics.bodies import Circle, Rect
 from lcp_physics.physics.forces import ExternalForce, Gravity
 from lcp_physics.physics.constraints import Joint, TotalConstraint
 from lcp_physics.physics.utils import Recorder, plot, Defaults
 
-from matplotlib.pyplot import plot, draw, show
+import matplotlib.pyplot as plt
 
 DT = Defaults.DT
 DTYPE = Defaults.DTYPE
@@ -29,37 +32,46 @@ nsteps = 150
 
 
 def main(screen):
+
+    #if torch.cuda.is_available():
+    #    dev = "cuda:0"
+    #else:
+    #    dev = "cpu"
+
     forces = []
     #ground_truth_mass = torch.tensor([TOTAL_MASS], dtype=DTYPE)
 
-    ct = torch.linspace(0, runtime, nsteps)
-    #ut = torch.randn([1,nsteps]).squeeze(0)
+    ct = torch.linspace(0, runtime, nsteps, device=Defaults.DEVICE)
 
-    ut = torch.Tensor([-124.5089, -114.6881, -107.8049, -96.0581, -84.1959, -67.6522,
-            -48.0741, -24.8150, 2.8534, 32.7275, 62.6945, 86.2345,
-            110.7100, 130.5876, 143.7698, 155.8819, 165.4628, 174.4192,
-            177.7279, 180.2041, 182.5195, 186.2484, 188.4550, 189.6284,
-            186.4164, 53.8088, -174.4299, -183.5373, -179.4377, -180.3835,
-            -176.6764, -179.6389, -176.0699, -175.7458, -177.6105, -173.4036,
-            -173.7934, -172.6594, -176.7870, -177.1830, -174.3518, -177.3258,
-            -172.4485, -172.6221, -174.7140, -176.9489, -174.3911, -175.7147,
-            -174.2562, -175.1786, -171.9940, -173.4082, -175.6440, -178.4764,
-            -181.5854, -175.9718, -180.1217, -180.0849, -179.2285, -179.9691,
-            -178.2708, -180.6049, -180.5375, -178.1284, -181.7236, -183.2817,
-            -182.8911, -193.2361, -195.6128, -197.7275, -194.6451, -192.9184,
-            -194.7851, -190.7589, -184.8874, -185.4704, -185.3693, -177.2408,
-            -176.6083, -149.9813, -159.2283, -143.6585, -135.8553, -133.6324,
-            -129.2765, -124.2765, -128.5453, -126.2177, -119.9912, -117.7339,
-            -112.9609, -108.5498, -106.2749, -101.7414, -89.0223, -98.5878,
-            -101.0174, -100.6900, -100.1747, -103.7277, -97.2610, -98.9044,
-            -92.4657, -80.8556, -72.3655, -93.0464, -78.4735, -71.2295,
-            -70.5703, -61.7161, -68.1966, -76.4329, -62.1098, -68.6403,
-            -75.8038, -73.2225, -48.7771, -41.6379, -48.7434, -55.3279,
-            -52.1072, -51.0750, -60.2008, -48.4225, -68.5821, -66.5538,
-            -66.0915, -69.5732, -78.5038, -67.5578, -68.5383, -91.4646,
-            -65.5343, -57.6426, -74.1637, -69.6933, -91.9495, -109.8934,
-            -95.1881, -83.3115, -82.3295, -76.4099, -94.1542, -94.2271,
-            -72.7767, -83.3744, -71.8018, -70.7023, -82.7487, -11.7984])
+
+    ut = torch.tensor([-1605.5942, -1598.4509, -1554.4310, -1338.5729, -1362.6662, -1601.0057,
+        -1368.2047, -1447.8799, -1468.1946, -1561.3396, -1595.0144, -1137.6313,
+         -591.9468,  -211.9797,   163.8500,   196.0043,   229.8317,   208.1212,
+          234.3518,   111.0826,   103.0544,    58.8933,    27.4864,     7.0699,
+         -120.6865,  -240.8309,  -440.6083,  -414.6174,  -418.0714,  -421.2589,
+         -352.9074,  -283.0702,  -321.3500,  -262.6164,  -237.7303,  -342.4958,
+         -356.1218,  -255.1522,  -372.5189,  -399.5789,  -522.1155,  -460.8092,
+         -506.4205,  -380.1456,  -248.6148,  -302.2825,  -103.0938,  -191.7826,
+          -61.8832,   233.6888,   731.5193,   832.3451,   842.7044,   976.3949,
+          900.6689,   740.5296,   744.6081,   753.7558,   786.8101,   616.9571,
+          656.3346,   833.8041,   706.6461,   871.3550,  1030.6888,   900.1758,
+          996.5229,   900.0365,   943.0948,   845.3470,   936.0502,   938.4112,
+          934.9106,   879.7476,  1083.4686,  1068.4445,  1027.7629,  1061.1221,
+         1076.0351,   918.4535,  1024.3541,   989.6422,   923.6206,  1004.4500,
+         1041.8034,   838.4601,   803.5565,   772.2364,   636.6075,   936.8204,
+          675.2448,   678.9081,  1004.8696,   979.5466,   652.9930,   820.7622,
+          777.7355,   728.2931,   876.9120,   810.3975,   855.0797,   769.3505,
+          701.5111,   668.2611,   744.0883,   456.1483,   536.5857,   540.6397,
+          439.4413,   524.1302,   233.6891,   506.7044,   365.0381,   185.3458,
+          231.1983,   347.6416,   356.6151,   279.0252,   325.3887,   415.5265,
+          354.4233,   270.3732,   231.2778,   216.2692,   345.1276,   185.7488,
+          213.7231,   331.3090,  -108.3021,   298.4766,    51.4663,    -6.6531,
+           93.6787,    70.1087,   135.1969,   -57.0313,    10.2455,    34.4662,
+          -79.4893,   -58.0966,  -121.3225,  -228.2877,  -125.6331,  -153.7666,
+           -9.6513,  -135.1915,   -94.7192,   -87.6338,  -168.4967,   155.2225],
+             device=Defaults.DEVICE)
+
+    #ut = 100*torch.randn([1,nsteps]).squeeze(0)
 
     rec = None
     # rec = Recorder(DT, screen)
@@ -70,8 +82,8 @@ def main(screen):
     max_iter = 100
 
 
-    utT = torch.tensor(ut,requires_grad=True, dtype=DTYPE)
-    ctT = torch.tensor(ct,requires_grad=True, dtype=DTYPE)
+    utT = torch.tensor(ut,requires_grad=True, dtype=DTYPE,device=Defaults.DEVICE)
+    ctT = torch.tensor(ct,requires_grad=True, dtype=DTYPE,device=Defaults.DEVICE)
 
 
 
@@ -81,14 +93,15 @@ def main(screen):
     last_loss = 1e10
     lossHist = []
 
-    for i in range(1,200):
+    for i in range(1,2000):
         world, chain = make_world(forces, ctT, utT)
 
-        zhist = positions_run_world(world, run_time=runtime, screen=screen, recorder=rec)
-        zhist = torch.stack(zhist)
+        zhist = positions_run_world(world, run_time=runtime, screen=None, recorder=rec)
+        zhist = torch.stack(zhist).to(device=Defaults.DEVICE)
         optim.zero_grad()
 
-        loss = MSELoss()(zhist, 150*torch.tensor(np.ones(zhist.size()),requires_grad=True, dtype=DTYPE))
+        loss = MSELoss()(zhist, 150*torch.tensor(np.ones(zhist.size()),requires_grad=True, dtype=DTYPE,device=Defaults.DEVICE))/100
+        #loss = zhist[-1]
         loss.backward()
 
         lossHist.append(loss.item())
@@ -98,69 +111,27 @@ def main(screen):
         print('Gradient:', utT.grad)
         print('Next u:', utT)
 
-        plot(lossHist)
-        plot(zhist.clone().detach().numpy())
+        #plt.axis([-1, 1, -1, 1])
+        plt.ion()
+        plt.show()
 
-        draw()
+        plt.plot(lossHist)
+        plt.draw()
+
+        pl1 = zhist.cpu()
+        plt.plot(pl1.clone().detach().numpy())
+        #plt.plot(zhist)
+        plt.draw()
+
+        plt.pause(0.001)
+
+        utTCurrent = utT.clone()
+
+    world, chain = make_world(forces, ctT, utTCurrent)
+
+    positions_run_world(world, run_time=runtime, screen=None, recorder=rec)
 
 
-
-    #ground_truth_pos = [p.data for p in ground_truth_pos]
-    #ground_truth_pos = torch.cat(ground_truth_pos)
-
-    # learning_rate = 0.5
-    # max_iter = 100
-
-    # next_mass = torch.rand_like(ground_truth_mass, requires_grad=True)
-    # print('\rInitial mass:', next_mass.item())
-    # print('-----')
-
-    # optim = torch.optim.RMSprop([next_mass], lr=learning_rate)
-    # loss_hist = []
-    # mass_hist = [next_mass.item()]
-    # last_loss = 1e10
-    # for i in range(max_iter):
-    #     #if i % 1 == 0:
-    #     #    world, chain = make_world(forces, next_mass.clone().detach(), num_links=NUM_LINKS)
-    #     #    run_world(world, run_time=10, print_time=False, screen=None, recorder=None)
-
-    #     world, chain = make_world(forces, next_mass, num_links=NUM_LINKS)
-    #     positions = positions_run_world(world, run_time=10, screen=None)
-    #     positions = torch.cat(positions)
-    #     positions = positions[:len(ground_truth_pos)]
-    #     clipped_ground_truth_pos = ground_truth_pos[:len(positions)]
-
-    #     optim.zero_grad()
-    #     loss = MSELoss()(positions, clipped_ground_truth_pos)
-    #     loss.backward()
-
-    #     optim.step()
-
-    #     print('Iteration: {} / {}'.format(i+1, max_iter))
-    #     print('Loss:', loss.item())
-    #     print('Gradient:', next_mass.grad.item())
-    #     print('Next mass:', next_mass.item())
-    #     print('-----')
-    #     if abs((last_loss - loss).item()) < STOP_DIFF:
-    #         print('Loss changed by less than {} between iterations, stopping training.'
-    #               .format(STOP_DIFF))
-    #         break
-    #     last_loss = loss
-    #     loss_hist.append(loss.item())
-    #     mass_hist.append(next_mass.item())
-
-    # world = make_world(forces, next_mass)[0]
-    # rec = None
-    # positions = positions_run_world(world, run_time=30, screen=screen, recorder=rec)
-    # positions = torch.cat(positions)
-    # positions = positions[:len(ground_truth_pos)]
-    # clipped_ground_truth_pos = ground_truth_pos[:len(positions)]
-    # loss = MSELoss()(positions, clipped_ground_truth_pos)
-    # print('Final loss:', loss.item())
-    # print('Final mass:', next_mass.item())
-
-    # plot(loss_hist)
-    # plot(mass_hist)
 
 
 
